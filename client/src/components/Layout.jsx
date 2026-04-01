@@ -1,10 +1,26 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { notifications as notificationsApi } from "../services/api";
 
 const Layout = () => {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const [showDropdown, setShowDropdown] = useState(false);
+  const [notificationCount, setNotificationCount] = useState(0);
+
+  useEffect(() => {
+    loadNotifications();
+  }, []);
+
+  const loadNotifications = async () => {
+    try {
+      const { data } = await notificationsApi.getAll({ read: false });
+      const unread = data.notifications?.filter(n => !n.isRead).length || 0;
+      setNotificationCount(unread);
+    } catch (error) {
+      console.error("Failed to load notifications");
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -115,7 +131,7 @@ const Layout = () => {
         <div className="header-right">
           <NavLink to="/dashboard/notifications" className="notification-bell" style={{ textDecoration: "none", color: "inherit" }}>
             🔔
-            <span className="notification-badge">3</span>
+            {notificationCount > 0 && <span className="notification-badge">{notificationCount}</span>}
           </NavLink>
           <NavLink to="/dashboard/profile" style={{ textDecoration: "none", color: "inherit" }}>
             <div className="user-menu">

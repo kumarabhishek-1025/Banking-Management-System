@@ -13,6 +13,7 @@ const Transactions = () => {
   const loadTransactions = async () => {
     try {
       const { data } = await transactionsApi.getAll({ limit: 100 });
+      console.log("API Response:", data);
       setTransactions(data.transactions || []);
       setSummary(data.summary || { totalIncome: 0, totalExpense: 0 });
     } catch (error) {
@@ -91,6 +92,7 @@ const Transactions = () => {
               <thead>
                 <tr>
                   <th>Transaction</th>
+                  <th>From/To</th>
                   <th>Date</th>
                   <th>Status</th>
                   <th>Amount</th>
@@ -109,6 +111,17 @@ const Transactions = () => {
                           <span className="transaction-date">{tx.category}</span>
                         </div>
                       </div>
+                    </td>
+                    <td>
+                      {tx.senderName && tx.senderAccountNumber 
+                        ? `${tx.senderName} (${tx.senderAccountNumber.slice(-4)})`
+                        : tx.senderName 
+                          ? tx.senderName 
+                          : tx.senderAccountNumber 
+                            ? `****${tx.senderAccountNumber.slice(-4)}`
+                            : tx.recipient 
+                              ? tx.recipient 
+                              : "-"}
                     </td>
                     <td>{formatDate(tx.createdAt)}</td>
                     <td>

@@ -58,11 +58,13 @@ router.post("/create", auth, async (req, res) => {
     if (initialDeposit && initialDeposit > 0) {
       await Transaction.create({
         user: req.userId,
+        customer: req.userId,
         account: account._id,
         type: "deposit",
         category: "Account Opening",
         amount: initialDeposit,
         description: "Initial deposit for new account",
+        senderName: "Self",
         status: "completed",
         paymentMethod: "cash",
         completedAt: new Date()
@@ -124,11 +126,13 @@ router.post("/:accountId/deposit", auth, async (req, res) => {
 
     const transaction = await Transaction.create({
       user: req.userId,
+      customer: req.userId,
       account: account._id,
       type: "deposit",
       category: "Deposit",
       amount: amount,
       description: description || "Deposit",
+      senderName: "Self",
       status: "completed",
       paymentMethod: "cash",
       completedAt: new Date()
@@ -177,11 +181,13 @@ router.post("/:accountId/withdraw", auth, async (req, res) => {
 
     const transaction = await Transaction.create({
       user: req.userId,
+      customer: req.userId,
       account: account._id,
       type: "withdrawal",
       category: "Withdrawal",
       amount: -amount,
       description: description || "Withdrawal",
+      senderName: "Self",
       status: "completed",
       paymentMethod: "cash",
       completedAt: new Date()

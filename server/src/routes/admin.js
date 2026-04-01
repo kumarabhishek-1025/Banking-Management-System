@@ -537,6 +537,13 @@ router.get("/accounts", auth, admin, async (req, res) => {
       if (!acc.user && acc.customer) {
         return { ...acc.toObject(), user: acc.customer };
       }
+      // If both user and customer are missing, use a placeholder
+      if (!acc.user && !acc.customer) {
+        return { 
+          ...acc.toObject(), 
+          user: { firstName: "Unknown", lastName: "User", email: "N/A", _id: null }
+        };
+      }
       return acc;
     });
 
@@ -716,12 +723,25 @@ router.get("/loans", auth, admin, async (req, res) => {
     if (status) query.status = status;
     if (purpose) query.purpose = purpose;
 
-    const loans = await Loan.find(query)
+    console.log("Admin loans query:", JSON.stringify(query));
+
+    let loans = await Loan.find(query)
       .populate("user", "firstName lastName email phone")
       .populate("account", "accountNumber accountType")
       .sort({ createdAt: -1 })
       .limit(parseInt(limit))
       .skip((parseInt(page) - 1) * parseInt(limit));
+
+    console.log("Found loans:", loans.length);
+
+    // Fix user display - use customer if user is missing
+    loans = loans.map(loan => {
+      const obj = loan.toObject();
+      if (!obj.user && obj.customer) {
+        obj.user = obj.customer;
+      }
+      return obj;
+    });
 
     const total = await Loan.countDocuments(query);
     const summary = {
@@ -732,6 +752,7 @@ router.get("/loans", auth, admin, async (req, res) => {
 
     res.json({ loans, summary, pagination: { total, page: parseInt(page), pages: Math.ceil(total / parseInt(limit)) } });
   } catch (error) {
+    console.error("Admin loans error:", error);
     res.status(500).json({ message: error.message });
   }
 });

@@ -1,10 +1,26 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, Outlet, useNavigate, NavLink } from "react-router-dom";
+import { admin as adminApi } from "../services/api";
 
 const AdminLayout = () => {
   const navigate = useNavigate();
   const [showDropdown, setShowDropdown] = useState(false);
+  const [notificationCount, setNotificationCount] = useState(0);
   const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+  useEffect(() => {
+    loadNotifications();
+  }, []);
+
+  const loadNotifications = async () => {
+    try {
+      const { data } = await adminApi.getNotifications({ read: false });
+      const unread = data.notifications?.filter(n => !n.isRead).length || 0;
+      setNotificationCount(unread);
+    } catch (error) {
+      console.error("Failed to load notifications");
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -122,7 +138,7 @@ const AdminLayout = () => {
         <div className="header-right">
           <NavLink to="/admin/notifications" className="notification-bell" style={{ textDecoration: "none", color: "inherit" }}>
             🔔
-            <span className="notification-badge">3</span>
+            {notificationCount > 0 && <span className="notification-badge">{notificationCount}</span>}
           </NavLink>
           <NavLink to="/admin/settings" style={{ textDecoration: "none", color: "inherit" }}>
             <div className="user-menu">

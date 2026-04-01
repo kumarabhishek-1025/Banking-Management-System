@@ -1,7 +1,8 @@
 const mongoose = require("mongoose");
 
 const loanSchema = new mongoose.Schema({
-  user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  user: { type: mongoose.Schema.Types.ObjectId, ref: "Customer", required: true },
+  customer: { type: mongoose.Schema.Types.ObjectId, ref: "Customer" },
   account: { type: mongoose.Schema.Types.ObjectId, ref: "BankAccount", required: true },
   amount: { type: Number, required: true },
   interestRate: { type: Number, required: true },

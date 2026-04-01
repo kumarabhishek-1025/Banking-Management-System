@@ -10,7 +10,7 @@ const app = express();
 const PORT = process.env.PORT || 4000;
 
 app.use(cors({ 
-  origin: ["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173", VITE_API_URL], 
+  origin: ["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173", "https://your-render-app.onrender.com"], 
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -96,8 +96,8 @@ const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://kabhishek76673_db_user
 mongoose.connect(MONGO_URI)
   .then(() => {
     console.log("✅ Connected to MongoDB: horizon");
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${PORT} or ${VITE_API_URL}` );
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`🚀 Server running on http://localhost:${PORT}`);
     });
   })
   .catch((err) => {

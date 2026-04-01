@@ -31,7 +31,7 @@ const FixedDeposits = () => {
         depositsApi.getSchemes("fixed")
       ]);
       setFds(fdRes.data || []);
-      setAccounts(accountRes.data.accounts?.filter(a => a.status === "active") || []);
+      setAccounts(accountRes.data.accounts || []);
       setSchemes(schemeRes.data || []);
     } catch (error) {
       console.error("Failed to load data:", error);
@@ -337,12 +337,12 @@ const FixedDeposits = () => {
                   <option value="">Choose your account</option>
                   {accounts.map((acc) => (
                     <option key={acc._id} value={acc._id}>
-                      {acc.accountNumber} - {formatCurrency(acc.balance)}
+                      {acc.accountNumber} - {formatCurrency(acc.balance)} ({acc.status})
                     </option>
                   ))}
                 </select>
                 {accounts.length === 0 && (
-                  <p style={{ color: "#dc2626", fontSize: "0.8rem", marginTop: "0.5rem" }}>⚠️ No active accounts. Create an account first.</p>
+                  <p style={{ color: "#dc2626", fontSize: "0.8rem", marginTop: "0.5rem" }}>⚠️ No accounts found. Create an account first.</p>
                 )}
               </div>
 

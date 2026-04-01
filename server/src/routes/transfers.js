@@ -68,6 +68,10 @@ router.post("/send", auth, async (req, res) => {
       return res.status(404).json({ message: "Receiver account not found" });
     }
 
+    if (receiverAccount.status !== "active") {
+      return res.status(403).json({ message: "Receiver account is not active yet. Please wait for admin approval." });
+    }
+
     if (senderAccount._id.toString() === receiverAccount._id.toString()) {
       return res.status(400).json({ message: "Cannot transfer to the same account" });
     }
@@ -102,12 +106,14 @@ router.post("/send", auth, async (req, res) => {
     // Create transaction for sender
     await Transaction.create({
       user: req.userId,
+      customer: req.userId,
       account: senderAccount._id,
       type: "transfer",
       category: "Transfer",
       amount: -amount,
       description: description || `Transfer to ${receiverAccount.bankName}`,
       recipient: receiverAccount.accountNumber.slice(-4),
+      senderName: senderName,
       status: "completed",
       paymentMethod: "online",
       completedAt: new Date()
@@ -116,6 +122,7 @@ router.post("/send", auth, async (req, res) => {
     // Create transaction for receiver
     await Transaction.create({
       user: receiverAccount.user,
+      customer: receiverAccount.user,
       account: receiverAccount._id,
       type: "transfer",
       category: "Transfer Received",

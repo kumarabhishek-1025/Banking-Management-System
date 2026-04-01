@@ -23,7 +23,7 @@ const Loans = () => {
         loansApi.getSchemes ? loansApi.getSchemes() : Promise.resolve({ data: [] })
       ]);
       setLoans(loanRes.data || []);
-      setAccounts(accountRes.data.accounts?.filter(a => a.status === "active") || []);
+      setAccounts(accountRes.data.accounts || []);
       
       if (schemeRes.data && schemeRes.data.length > 0) {
         setSchemes(schemeRes.data);

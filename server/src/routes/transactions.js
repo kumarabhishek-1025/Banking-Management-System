@@ -10,7 +10,13 @@ router.get("/", auth, async (req, res) => {
   try {
     const { type, startDate, endDate, limit = 50 } = req.query;
     
-    const query = { user: req.userId };
+    // Query by customer field (primary) or user field (fallback)
+    const query = { 
+      $or: [
+        { customer: req.userId }, 
+        { user: req.userId }
+      ]
+    };
     
     if (type) {
       query.type = type;
@@ -27,19 +33,22 @@ router.get("/", auth, async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(parseInt(limit));
 
-    const totalIncome = transactions
-      .filter(t => t.amount > 0)
-      .reduce((sum, t) => sum + t.amount, 0);
-    
-    const totalExpense = transactions
-      .filter(t => t.amount < 0)
-      .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+    // Add senderName calculation for display
+    const processedTransactions = transactions.map(tx => {
+      if (!tx.senderName && !tx.sender && !tx.recipient) {
+        // For deposits/withdrawals, show "Self"
+        if (tx.type === "deposit" || tx.type === "withdrawal") {
+          tx.senderName = "Self";
+        }
+      }
+      return tx;
+    });
 
     res.json({
-      transactions,
+      transactions: processedTransactions,
       summary: {
-        totalIncome,
-        totalExpense,
+        totalIncome: transactions.filter(t => t.amount > 0).reduce((sum, t) => sum + t.amount, 0),
+        totalExpense: transactions.filter(t => t.amount < 0).reduce((sum, t) => sum + Math.abs(t.amount), 0),
         transactionCount: transactions.length
       }
     });

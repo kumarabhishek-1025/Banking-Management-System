@@ -13,6 +13,7 @@ const FixedDeposit = require("../models/FixedDeposit");
 const RecurringDeposit = require("../models/RecurringDeposit");
 const CreditCard = require("../models/CreditCard");
 const ChequeBook = require("../models/ChequeBook");
+const Loan = require("../models/Loan");
 const { createAuditLog } = require("../utils/audit");
 
 const staffAuth = (req, res, next) => {
@@ -75,27 +76,30 @@ router.get("/customers", staffAuth, async (req, res) => {
     if (phone) query.phone = new RegExp(phone, "i");
     if (email) query.email = new RegExp(email, "i");
 
-    // Check both User and Customer collections
-    const users = await User.find(query).limit(50).lean();
+    console.log("Staff customers query:", query);
+
+    // Query Customer collection only (User collection is deprecated)
     const customers = await Customer.find(query).limit(50).lean();
+    console.log("Found customers:", customers.length);
     
-    // Combine both collections
-    const allCustomers = [...users, ...customers];
-    
-    const usersWithAccounts = await Promise.all(
-      allCustomers.map(async (customer) => {
-        const account = await Account.findOne({ user: customer._id, status: "active" });
+    // Get accounts for each customer
+    const customersWithAccounts = await Promise.all(
+      customers.map(async (customer) => {
+        const accounts = await Account.find({ customer: customer._id }).lean();
+        console.log("Accounts for", customer.firstName, ":", accounts.length, accounts.map(a => a.accountNumber));
+        const activeAccount = accounts.find(a => a.status === "active") || accounts[0];
         return {
           ...customer,
-          accountNumber: account?.accountNumber,
-          balance: account?.balance || 0,
-          status: account?.status
+          accountNumber: activeAccount?.accountNumber,
+          balance: accounts.reduce((sum, acc) => sum + acc.balance, 0),
+          status: activeAccount?.status || "pending"
         };
       })
     );
 
-    res.json({ customers: usersWithAccounts });
+    res.json({ customers: customersWithAccounts });
   } catch (error) {
+    console.error("Staff customers error:", error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -114,16 +118,23 @@ router.get("/customer/account/:accountNumber", staffAuth, async (req, res) => {
 
 router.get("/customers/:id", staffAuth, async (req, res) => {
   try {
-    // Check both User and Customer collections
-    let user = await User.findById(req.params.id).lean();
-    if (!user) {
-      user = await Customer.findById(req.params.id).lean();
-    }
+    let user = await Customer.findById(req.params.id).lean();
     if (!user) {
       return res.status(404).json({ message: "Customer not found" });
     }
-    const account = await Account.findOne({ user: req.params.id });
-    res.json({ ...user, accountNumber: account?.accountNumber, balance: account?.balance });
+    
+    const accounts = await BankAccount.find({ customer: req.params.id }).lean();
+    const accountNumber = accounts[0]?.accountNumber;
+    const balance = accounts.reduce((sum, acc) => sum + acc.balance, 0);
+    
+    const loans = await Loan.find({ user: req.params.id }).lean();
+    
+    res.json({ 
+      ...user, 
+      accountNumber: accountNumber, 
+      balance: balance,
+      loans: loans
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -173,10 +184,12 @@ router.post("/deposit", staffAuth, async (req, res) => {
 
     const transaction = new Transaction({
       user: account.user,
+      customer: account.user,
       account: account._id,
       type: "deposit",
       amount,
       description: description || "Cash Deposit",
+      senderName: "Bank Staff",
       status: "completed",
       staffId: req.user._id
     });
@@ -212,10 +225,12 @@ router.post("/withdraw", staffAuth, async (req, res) => {
 
     const transaction = new Transaction({
       user: account.user,
+      customer: account.user,
       account: account._id,
       type: "withdrawal",
-      amount,
+      amount: -amount,
       description: description || "Cash Withdrawal",
+      senderName: "Bank Staff",
       status: "completed",
       staffId: req.user._id
     });
@@ -254,10 +269,12 @@ router.post("/transfer", staffAuth, async (req, res) => {
 
     const transaction = new Transaction({
       user: fromAccount.user,
+      customer: fromAccount.user,
       account: fromAccount._id,
       type: "transfer",
-      amount,
+      amount: -amount,
       description: description || "Internal Transfer",
+      senderName: "Bank Staff",
       recipient: toAccount.user,
       status: "completed",
       staffId: req.user._id

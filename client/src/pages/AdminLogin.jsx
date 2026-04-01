@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { employees, auth } from "../services/api";
 import axios from "axios";
 
-const API_URL = VITE_API_URL || "http://localhost:4000/api";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
 
 const AdminLogin = () => {
   const navigate = useNavigate();

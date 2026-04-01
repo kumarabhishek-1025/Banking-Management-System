@@ -22,7 +22,7 @@ const RecurringDeposits = () => {
         depositsApi.getSchemes("recurring")
       ]);
       setRds(rdRes.data || []);
-      setAccounts(accountRes.data.accounts?.filter(a => a.status === "active") || []);
+      setAccounts(accountRes.data.accounts || []);
       setSchemes(schemeRes.data || []);
     } catch (error) {
       console.error("Failed to load data:", error);
